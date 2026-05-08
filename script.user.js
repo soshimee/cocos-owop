@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name cocos-owop
 // @namespace https://meowing.net
-// @version 0.1
+// @version 0.2
 // @description A helpful script for Our World of Pixels
 // @author catcake43
 // @match https://ourworldofpixels.com/*
@@ -11,9 +11,59 @@
 
 window.addEventListener("load", () => {
 	const OWOP = window.OWOP;
+
+	OWOP.on(OWOP.events.net.sec.rank, () => {
+		OWOP.showPlayerList(true);
+	});
+
 	OWOP.once(OWOP.events.misc.toolsInitialized, () => {
 		/** @type {typeof window.WebSocket} */
 		const WebSocket = OWOP.global.AnnoyingAPI.ws;
+
+		{
+			const prefix = ".";
+
+			const commands = {
+				help() {
+					OWOP.chat.local("Available commands: help, say, tp, tpto");
+					return "";
+				},
+				say(args) {
+					return args.split(" ");
+				},
+				tp(args) {
+					const x = Number(args[0]);
+					const y = Number(args[1]);
+					if (Number.isNaN(x) || Number.isNaN(y)) return OWOP.chat.local("Please provide valid x and y coordinates."), "";
+					OWOP.camera.centerCameraTo(x, y);
+					return "";
+				},
+				tpto(args) {
+					const id = args[0];
+					const player = OWOP.misc.world.players[id];
+					if (player === undefined) return OWOP.chat.local("Player not found."), "";
+					return commands.tp([player._x.val / 16, player._y.val / 16]);
+				}
+			};
+
+			const exec = (cmdObj, args) => {
+				const cmd = cmdObj[args.shift()];
+				if (typeof cmd === "function") return cmd(args);
+				if (typeof cmd === "object") return exec(cmd, args);
+				OWOP.chat.local(`Unknown command. Try ${prefix}help or ${prefix}say [your message].`);
+				return "";
+			};
+
+			const originalSendModifier = OWOP.chat.sendModifier;
+			OWOP.chat.sendModifier = (msg, ...args) => {
+				if (msg.startsWith(prefix)) {
+					const full = msg.slice(prefix.length);
+					const args = full.match(/[^\s"']+|"([^"]*)"/g);
+					return exec(commands, args);
+				}
+				return originalSendModifier?.(msg, ...args) ?? msg;
+			};
+		}
 
 		const proto = {
 			serverbound: {
