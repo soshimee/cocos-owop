@@ -185,7 +185,8 @@
 	const updateChunkClient = (x, y) => OWOP.emit(OWOP.events.renderer.updateChunk, OWOP.misc.world.getChunkAt(x, y));
 	const blend = (r1, g1, b1, r2, g2, b2, a) => {
 		a /= 255;
-		return [Math.round((r2 * a) + (r1 * (1 - a))), Math.round((g2 * a) + (g1 * (1 - a))), Math.round((b2 * a) + (b1 * (1 - a)))];
+		const z = 1 - a;
+		return [Math.round(r2 * a + r1 * z), Math.round(g2 * a + g1 * z), Math.round(b2 * a + b1 * z)];
 	};
 
 	class Client {
@@ -365,6 +366,7 @@
 				clipboardCanvas.height = image.height;
 				clipboardCanvas.getContext("2d").drawImage(image, 0, 0);
 				URL.revokeObjectURL(url);
+				clipboardInput.value = null;
 			});
 		});
 		clipboardCanvas.width = 0;
