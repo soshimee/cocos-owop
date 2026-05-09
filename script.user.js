@@ -42,7 +42,7 @@ window.addEventListener("load", () => {
 					const id = args[0];
 					const player = OWOP.misc.world.players[id];
 					if (player === undefined) return OWOP.chat.local("Player not found."), "";
-					return commands.tp(fromWorldPos([player._x.val, player._y.val]));
+					return commands.tp(fromWorldPos(player._x.val, player._y.val));
 				}
 			};
 
