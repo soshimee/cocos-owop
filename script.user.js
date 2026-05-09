@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name cocos-owop
 // @namespace https://meowing.net
-// @version 0.2
+// @version 0.3
 // @description A helpful script for Our World of Pixels
 // @author catcake43
 // @match https://ourworldofpixels.com/*
@@ -42,7 +42,7 @@ window.addEventListener("load", () => {
 					const id = args[0];
 					const player = OWOP.misc.world.players[id];
 					if (player === undefined) return OWOP.chat.local("Player not found."), "";
-					return commands.tp([player._x.val / 16, player._y.val / 16]);
+					return commands.tp(fromWorldPos([player._x.val, player._y.val]));
 				}
 			};
 
@@ -231,6 +231,8 @@ window.addEventListener("load", () => {
 			}
 		};
 
+		const fromWorldPos = (x, y) => [Math.floor(x / 16), Math.floor(y / 16)];
+		const toWorldPos = (x, y) => [x * 16, y * 16];
 		const fromChunkPos = (x, y) => [x * 16, y * 16];
 		const toChunkPos = (x, y) => [Math.floor(x / 16), Math.floor(y / 16)];
 		const setPixelClient = (x, y, rgb) => OWOP.misc.world.getChunkAt(...toChunkPos(x, y)).update(x, y, rgb);
@@ -245,8 +247,8 @@ window.addEventListener("load", () => {
 			constructor(url, world) {
 				this.ws = new WebSocket(url);
 				this.ws.binaryType = "arraybuffer";
-				this.chunkPos = [0, 0];
-				this.pQuota = [48, 4];
+				this.worldPos = [0, 0];
+				this.pQuota = [0, 0];
 				this.ready = false;
 				this.dead = false;
 				this.bucketState = [0, Date.now()];
@@ -261,6 +263,7 @@ window.addEventListener("load", () => {
 						} else if (name === "setPQuota") {
 							const data = proto.clientbound.setPQuota(event.data);
 							this.pQuota = [data.rate, data.per];
+							this.bucketState = [0, Date.now()];
 						}
 					}
 				});
@@ -281,13 +284,20 @@ window.addEventListener("load", () => {
 				this.bucketState = [value, Date.now()];
 			}
 
+			move(x, y) {
+				this.worldPos = [x, y];
+				this.ws.send(proto.serverbound.sendUpdates(...this.worldPos, 0, 0, 0, 0));
+			}
+
 			setPixel(x, y, r, g, b) {
-				const chunkPos = toChunkPos(x, y);
-				if (chunkPos[0] !== this.chunkPos[0] || chunkPos[1] !== this.chunkPos[1]) {
-					this.chunkPos = chunkPos;
-					this.ws.send(proto.serverbound.sendUpdates(...fromChunkPos(...chunkPos).map(p => p * 16), 0, 0, 0, 0));
-				}
+				const chunkPosNew = toChunkPos(x, y);
+				const chunkPosCurr = toChunkPos(...fromWorldPos(...this.worldPos));
+				const chunkDistance = Math.sqrt((chunkPosNew[0] - chunkPosCurr[0]) ** 2 + (chunkPosNew[1] - chunkPosCurr[1]) ** 2);
+				const shouldMove = chunkDistance >= 4;
+				const prevPos = this.worldPos;
+				if (shouldMove) this.move(...toWorldPos(...fromChunkPos(...chunkPosNew)));
 				this.ws.send(proto.serverbound.updatePixel(x, y, r, g, b));
+				if (config.sneaky && shouldMove) this.move(...prevPos);
 				--this.bucket;
 			}
 
@@ -298,8 +308,8 @@ window.addEventListener("load", () => {
 
 		class ClientPool {
 			constructor() {
-				/** @type {Client[]} */
-				this.clients = [];
+				/** @type {Set<Client>} */
+				this.clients = new Set();
 				this.index = 0;
 				/** @type {{ x: number, y: number, index: number, data: Uint8Array | Uint8ClampedArray }[]} */
 				this.chunkedQueue = [];
@@ -332,19 +342,13 @@ window.addEventListener("load", () => {
 			 * @param {Client} client Client to be added
 			 */
 			add(client) {
-				this.clients.push(client);
+				this.clients.add(client);
 			}
 
 			get client() {
-				for (let i = 0; i < this.clients.length; ++i) {
-					const client = this.clients[this.index];
-					if (client === undefined) return;
-					if (client.dead) {
-						client.destroy();
-						this.clients.splice(this.index, 1);
-					} else if (client.ready && client.bucket > 10) return client;
-					++this.index;
-					this.index %= this.clients.length;
+				for (const client of this.clients.values()) {
+					if (client.dead) client.destroy(), this.clients.delete(client);
+					if (client.ready && client.bucket > 10) return client;
 				}
 			}
 
@@ -382,13 +386,20 @@ window.addEventListener("load", () => {
 
 		const clipboardCanvas = document.createElement("canvas");
 
+		const config = {
+			sneaky: false,
+			follow: "",
+			followRadius: 16,
+			followSpeed: 1
+		};
+
 		OWOP.windowSys.addWindow(new OWOP.windowSys.class.window("cocos", {}, win => {
-			const form = document.createElement("form");
+			const connForm = document.createElement("form");
 			const connBtn = document.createElement("input");
 			connBtn.type = "button";
 			connBtn.value = "Connect";
 			connBtn.addEventListener("click", () => {
-				const data = new FormData(form);
+				const data = new FormData(connForm);
 				const url = data.get("url");
 				const conns = Number(data.get("conns"));
 				for (let i = 0; i < data.get("conns"); ++i) {
@@ -399,12 +410,31 @@ window.addEventListener("load", () => {
 			dcBtn.type = "button";
 			dcBtn.value = "Disconnect";
 			dcBtn.addEventListener("click", () => {
-				const data = new FormData(form);
+				const data = new FormData(connForm);
 				const conns = Number(data.get("conns"));
+				const it = pool.clients.values();
 				for (let i = 0; i < data.get("conns"); ++i) {
-					pool.clients.pop()?.destroy();
+					const next = it.next();
+					if (next.done) break;
+					const client = next.value;
+					client.destroy();
+					pool.clients.delete(client);
 				}
 			});
+			connForm.insertAdjacentHTML("beforeend", `
+				<label>
+					URL:
+					<input type="url" name="url" value="wss://ourworldofpixels.com/" required />
+				</label>
+				<br />
+				<label>
+					Connections:
+					<input type="number" name="conns" min="1" value="1" required />
+				</label>
+				<br />
+			`);
+			connForm.append(connBtn, dcBtn);
+			const clipboardDiv = document.createElement("div");
 			const clipboardInput = document.createElement("input");
 			clipboardInput.type = "file";
 			clipboardInput.accept = "image/*";
@@ -423,34 +453,106 @@ window.addEventListener("load", () => {
 			});
 			clipboardCanvas.width = 0;
 			clipboardCanvas.height = 0;
+			clipboardCanvas.style.display = "block";
 			clipboardCanvas.style.maxWidth = "200px";
 			clipboardCanvas.style.maxHeight = "200px";
-			const status = document.createElement("span");
+			clipboardDiv.append(clipboardInput, clipboardCanvas);
+			const statusDiv = document.createElement("div");
 			OWOP.on(OWOP.events.tick, () => {
-				status.textContent = `Active: ${pool.clients.filter(c => c.ready).length} | Connections: ${pool.clients.filter(c => !c.dead).length}`;
+				statusDiv.textContent = `Active: ${[...pool.clients].filter(c => c.ready).length} | Connections: ${[...pool.clients].filter(c => !c.dead).length}`;
 			});
-			form.insertAdjacentHTML("beforeend", `
+			const configForm = document.createElement("form");
+			configForm.insertAdjacentHTML("beforeend", `
 				<label>
-					URL:
-					<input type="url" name="url" value="wss://ourworldofpixels.com/" required />
+					Sneaky:
+					<input type="checkbox" name="sneaky" />
 				</label>
 				<br />
 				<label>
-					Connections:
-					<input type="number" name="conns" min="1" value="1" required />
+					Follow:
+					<select name="follow">
+						<option value=""></option>
+						<option value="circle">Circle</option>
+						<option value="atom">Atom</option>
+					</select>
 				</label>
 				<br />
+				<label>
+					FollowRadius:
+					<input type="number" name="followRadius" value="256" min="0" />
+				</label>
+				<br />
+				<label>
+					FollowSpeed:
+					<input type="number" name="followSpeed" value="1" min="0" />
+				</label>
 			`);
-			form.append(connBtn, dcBtn);
-			form.insertAdjacentHTML("beforeend", "<hr />");
-			form.append(clipboardInput);
-			form.insertAdjacentHTML("beforeend", "<br />");
-			form.append(clipboardCanvas);
-			form.insertAdjacentHTML("beforeend", "<hr />");
-			form.append(status);
-			win.container.append(form);
-			getForm = () => new FormData(form);
+			configForm.addEventListener("change", () => {
+				const data = new FormData(configForm);
+				config.sneaky = Boolean(data.get("sneaky"));
+				config.follow = data.get("follow");
+				config.followRadius = Number(data.get("followRadius"));
+				config.followSpeed = Number(data.get("followSpeed"));
+			});
+			win.container.append(connForm);
+			win.container.insertAdjacentHTML("beforeend", "<hr />");
+			win.container.append(clipboardDiv);
+			win.container.insertAdjacentHTML("beforeend", "<hr />");
+			win.container.append(configForm);
+			win.container.insertAdjacentHTML("beforeend", "<hr />");
+			win.container.append(statusDiv);
+			getForm = () => new FormData(connForm);
 		}));
+
+		let animTick = 0;
+		OWOP.on(OWOP.events.tick, () => {
+			if (!config.follow) return animTick = 0;
+			++animTick;
+			if (config.follow === "circle") {
+				const clients = [...pool.clients].filter(c => c.ready);
+				const cx = OWOP.mouse.worldX;
+				const cy = OWOP.mouse.worldY;
+				const r = config.followRadius;
+				const diff = Math.PI * 2 / clients.length;
+				const offset = animTick * config.followSpeed * 0.1;
+				for (let i = 0; i < clients.length; ++i) {
+					const rad = diff * i + offset;
+					const x = cx + r * Math.cos(rad);
+					const y = cy + r * Math.sin(rad);
+					clients[i].move(x, y);
+				}
+			} else if (config.follow === "atom") {
+				const clients = [...pool.clients].filter(c => c.ready);
+				const middle = clients.length / 2
+				const clients1 = clients.slice(middle);
+				const clients2 = clients.slice(0, middle);
+				const cx = OWOP.mouse.worldX;
+				const cy = OWOP.mouse.worldY;
+				const rx = config.followRadius * 0.6;
+				const ry = config.followRadius * 1.4;
+				const diff1 = Math.PI * 2 / clients1.length;
+				const diff2 = Math.PI * 2 / clients2.length;
+				const theta1 = Math.PI / 4;
+				const theta2 = -Math.PI / 4;
+				const sinTheta1 = Math.sin(theta1);
+				const cosTheta1 = Math.cos(theta1);
+				const sinTheta2 = Math.sin(theta2);
+				const cosTheta2 = Math.cos(theta2);
+				const offset = animTick * config.followSpeed * 0.1;
+				for (let i = 0; i < clients1.length; ++i) {
+					const rad = diff1 * i + offset;
+					const x = cx + rx * Math.cos(rad) * cosTheta1 - ry * Math.sin(rad) * sinTheta1;
+					const y = cy + rx * Math.cos(rad) * sinTheta1 + ry * Math.sin(rad) * cosTheta1;
+					clients1[i].move(x, y);
+				}
+				for (let i = 0; i < clients2.length; ++i) {
+					const rad = diff2 * i + offset;
+					const x = cx + rx * Math.cos(rad) * cosTheta2 - ry * Math.sin(rad) * sinTheta2;
+					const y = cy + rx * Math.cos(rad) * sinTheta2 + ry * Math.sin(rad) * cosTheta2;
+					clients2[i].move(x, y);
+				}
+			}
+		});
 
 		OWOP.tools.addToolObject(new OWOP.tools.class("(o) Chunker", OWOP.cursors.erase, OWOP.fx.player.RECT_SELECT_ALIGNED(16), OWOP.RANK.NONE, tool => {
 			let chunkPos = [0, 0];
