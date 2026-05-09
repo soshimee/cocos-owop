@@ -58,7 +58,7 @@ window.addEventListener("load", () => {
 			OWOP.chat.sendModifier = (msg, ...args) => {
 				if (msg.startsWith(prefix)) {
 					const full = msg.slice(prefix.length);
-					const args = full.match(/[^\s"']+|"([^"]*)"/g);
+					const args = full.match(/[^\s"']+|"([^"]*)"/g) ?? [];
 					return exec(commands, args);
 				}
 				return originalSendModifier?.(msg, ...args) ?? msg;
