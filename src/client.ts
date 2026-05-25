@@ -16,6 +16,7 @@ export class Client {
 	public pos = new Pos(0, 0);
 	public bucket = new Bucket(0, 0);
 	public state = ClientState.Connecting;
+	public id?: number;
 
 	public constructor(url: string, world: string) {
 		this.ws = new WebSocket(url);
@@ -31,6 +32,8 @@ export class Client {
 				const { c, reader } = parseS2C(event.data);
 				if (c === undefined) return;
 				if (c === PacketS2CSetId) {
+					const packet = new c(reader);
+					this.id = packet.id;
 					this.state = ClientState.Ready;
 				} else if (c === PacketS2CSetPQuota) {
 					const packet = new c(reader);
