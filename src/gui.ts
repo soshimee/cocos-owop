@@ -1,25 +1,32 @@
 import { GUIWindow } from "../types/OWOP";
 
-export class Window {
+export class OWOPWindow {
 	protected window: GUIWindow;
 
-	public constructor(title: string) {
-		this.window = new OWOP.windowSys.class.window(title, null, () => {});
-		OWOP.windowSys.addWindow(this.window);
+	public constructor(title: string, closeable = false) {
+		this.window = new OWOP.windowSys.class.window(title, { closeable }, () => {});
 	}
 
 	public getContainer() {
 		return this.window.container;
 	}
+
+	public open() {
+		OWOP.windowSys.addWindow(this.window);
+	}
+
+	public close() {
+		OWOP.windowSys.delWindow(this.window);
+	}
 }
 
-export class TabbedWindow extends Window {
+export class TabbedWindow extends OWOPWindow {
 	private tabs = new Map<string, { id: string, name: string, button: HTMLButtonElement, container: HTMLDivElement }>();
 	private tabsContainer = document.createElement("div");
 	private contentContainer = document.createElement("div");
 
-	public constructor(title: string) {
-		super(title);
+	public constructor(title: string, closeable?: boolean) {
+		super(title, closeable);
 		this.window.container.appendChild(this.tabsContainer);
 		this.window.container.appendChild(this.contentContainer);
 	}

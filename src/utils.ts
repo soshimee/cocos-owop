@@ -58,6 +58,10 @@ export class Pos {
 		this.y = chunkY * CHUNK_SIZE;
 	}
 
+	public add(pos: Pos) {
+		return new Pos(this.x + pos.x, this.y + pos.y);
+	}
+
 	public equals(pos: Pos) {
 		return this.x === pos.x && this.y === pos.y;
 	}

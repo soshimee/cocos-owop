@@ -1,4 +1,4 @@
-import { config } from "./config";
+import { config } from ".";
 import { PacketC2S, PacketC2SJoinWorld, PacketC2SSendUpdates, PacketC2SUpdatePixel, PacketS2CSetId, PacketS2CSetPQuota, parseS2C } from "./proto";
 import { Bucket, Col, Pos } from "./utils";
 
