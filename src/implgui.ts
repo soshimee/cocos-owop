@@ -26,7 +26,7 @@ const buildWindowConnTab = (container: HTMLDivElement, win: TabbedWindow) => {
 	const thead = document.createElement("thead");
 	thead.style.top = "0";
 	const tr = document.createElement("tr");
-	const columns = Array.from({ length: 5 }, () => document.createElement("th"));
+	const columns = Array.from({ length: 6 }, () => document.createElement("th"));
 	const selectAllInput = document.createElement("input");
 	selectAllInput.type = "checkbox";
 	columns[0].append(selectAllInput);
@@ -39,6 +39,8 @@ const buildWindowConnTab = (container: HTMLDivElement, win: TabbedWindow) => {
 	columns[3].style.width = "50px";
 	columns[4].textContent = "y";
 	columns[4].style.width = "50px";
+	columns[5].textContent = "bucket";
+	columns[5].style.width = "50px";
 	tr.append(...columns);
 	thead.append(tr);
 	const tbody = document.createElement("tbody");
@@ -73,7 +75,8 @@ const buildWindowConnTab = (container: HTMLDivElement, win: TabbedWindow) => {
 	tickGui = () => {
 		if (win.tab !== "conn") return;
 		const clients = [...pool.clients];
-		statusDiv.textContent = `Active: ${clients.filter(c => c.state === ClientState.Ready).length} | Connections: ${clients.filter(c => c.state !== ClientState.Disconnected).length}`;
+		const readyClients = clients.filter(c => c.state === ClientState.Ready);
+		statusDiv.textContent = `${readyClients.length} | ${clients.filter(c => c.state !== ClientState.Disconnected).length} | ${readyClients.reduce((a, b) => a + b.bucket.value, 0).toFixed(0)}`;
 		for (const [client, { row, columns }] of rowMap.entries()) {
 			if (!pool.clients.has(client)) {
 				row.remove();
@@ -91,12 +94,13 @@ const buildWindowConnTab = (container: HTMLDivElement, win: TabbedWindow) => {
 			columns[2].textContent = client.id ? String(client.id) : "-";
 			columns[3].textContent = client.pos.x.toFixed(2);
 			columns[4].textContent = client.pos.y.toFixed(2);
+			columns[5].textContent = client.bucket.value.toFixed(0);
 		}
 		if (pool.clients.size > rowMap.size) {
 			for (const client of pool.clients.values()) {
 				if (rowMap.has(client)) continue;
 				const tr = document.createElement("tr");
-				const columns = Array.from({ length: 5 }, () => document.createElement("td"));
+				const columns = Array.from({ length: 6 }, () => document.createElement("td"));
 				const selectInput = document.createElement("input");
 				selectInput.type = "checkbox";
 				selectInput.checked = selectAllInput.checked;

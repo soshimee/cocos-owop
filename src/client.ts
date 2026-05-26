@@ -16,7 +16,7 @@ export class Client {
 	public pos = new Pos(0, 0);
 	public col = new Col(0, 0, 0);
 	public tool = 0;
-	public bucket = new Bucket(0, 0);
+	public bucket = new Bucket(0, 1);
 	public state = ClientState.Connecting;
 	public id?: number;
 
