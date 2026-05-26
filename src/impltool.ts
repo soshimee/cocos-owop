@@ -1,4 +1,4 @@
-import { pool } from ".";
+import { desync, pool } from ".";
 import { FxObj } from "../types/OWOP";
 import { clipboardCanvas } from "./implgui";
 import { Col, Pos } from "./utils";
@@ -21,6 +21,7 @@ export const buildTools = () => {
 					if (client === undefined) break outer;
 					client.setPixel(npos, color);
 					OWOP.misc.world.getChunkAt(pos.chunkX, pos.chunkY).update(npos.x, npos.y, rgb);
+					desync.addPixel(npos, pixelColor);
 				}
 			}
 			OWOP.emit(OWOP.events.renderer.updateChunk, OWOP.misc.world.getChunkAt(pos.chunkX, pos.chunkY));

@@ -34,11 +34,11 @@ const buildWindowConnTab = (container: HTMLDivElement, win: TabbedWindow) => {
 	columns[1].textContent = "?";
 	columns[1].style.width = "15px";
 	columns[2].textContent = "id";
-	columns[2].style.width = "30px";
+	columns[2].style.width = "50px";
 	columns[3].textContent = "x";
-	columns[3].style.width = "70px";
+	columns[3].style.width = "50px";
 	columns[4].textContent = "y";
-	columns[4].style.width = "70px";
+	columns[4].style.width = "50px";
 	tr.append(...columns);
 	thead.append(tr);
 	const tbody = document.createElement("tbody");
@@ -149,6 +149,26 @@ const buildWindowConfTab = (container: HTMLDivElement) => {
 	sneakyInput.type = "checkbox";
 	sneakyInput.checked = config.sneaky;
 	sneakyLabel.append(sneakyText, sneakyInput);
+	const bucketThresholdLabel = document.createElement("label");
+	bucketThresholdLabel.style.display = "block";
+	const bucketThresholdText = document.createTextNode("Bucket threshold ");
+	const bucketThresholdInput = document.createElement("input");
+	bucketThresholdInput.type = "number";
+	bucketThresholdInput.min = "0";
+	bucketThresholdInput.max = "1";
+	bucketThresholdInput.step = "0.01";
+	bucketThresholdInput.value = String(config.bucketThreshold);
+	bucketThresholdLabel.append(bucketThresholdText, bucketThresholdInput);
+	const desyncTimeoutLabel = document.createElement("label");
+	desyncTimeoutLabel.style.display = "block";
+	const desyncTimeoutText = document.createTextNode("Desync timeout ");
+	const desyncTimeoutInput = document.createElement("input");
+	desyncTimeoutInput.type = "number";
+	desyncTimeoutInput.min = "0";
+	desyncTimeoutInput.max = "1";
+	desyncTimeoutInput.step = "0.01";
+	desyncTimeoutInput.value = String(config.desyncTimeout);
+	desyncTimeoutLabel.append(desyncTimeoutText, desyncTimeoutInput);
 	const followLabel = document.createElement("label");
 	followLabel.style.display = "block";
 	const followText = document.createTextNode("Follow ");
@@ -163,6 +183,20 @@ const buildWindowConfTab = (container: HTMLDivElement) => {
 	followSelect.append(...followSelectOptions);
 	followSelect.value = config.follow;
 	followLabel.append(followText, followSelect);
+	const followColorLabel = document.createElement("label");
+	followColorLabel.style.display = "block";
+	const followColorText = document.createTextNode("Follow color ");
+	const followColorInput = document.createElement("input");
+	followColorInput.type = "checkbox";
+	followColorInput.checked = config.followColor;
+	followColorLabel.append(followColorText, followColorInput);
+	const followToolLabel = document.createElement("label");
+	followToolLabel.style.display = "block";
+	const followToolText = document.createTextNode("Follow tool ");
+	const followToolInput = document.createElement("input");
+	followToolInput.type = "checkbox";
+	followToolInput.checked = config.followTool;
+	followToolLabel.append(followToolText, followToolInput);
 	const followStepsLabel = document.createElement("label");
 	followStepsLabel.style.display = "block";
 	const followStepsText = document.createTextNode("Follow steps ");
@@ -183,12 +217,24 @@ const buildWindowConfTab = (container: HTMLDivElement) => {
 	const saveBtn = document.createElement("button");
 	saveBtn.textContent = "Save";
 	btnsDiv.append(saveBtn);
-	container.append(sneakyLabel, followLabel, followStepsLabel, followRadiusLabel, btnsDiv);
+	container.append(sneakyLabel, bucketThresholdLabel, desyncTimeoutLabel, followLabel, followColorLabel, followToolLabel, followStepsLabel, followRadiusLabel, btnsDiv);
 	sneakyInput.addEventListener("change", () => {
 		config.sneaky = sneakyInput.checked;
 	});
+	bucketThresholdInput.addEventListener("change", () => {
+		config.bucketThreshold = Number(bucketThresholdInput.value);
+	});
+	desyncTimeoutInput.addEventListener("change", () => {
+		config.desyncTimeout = Number(desyncTimeoutInput.value);
+	});
 	followSelect.addEventListener("change", () => {
 		config.follow = followSelect.value;
+	});
+	followColorInput.addEventListener("change", () => {
+		config.followColor = followColorInput.checked;
+	});
+	followToolInput.addEventListener("change", () => {
+		config.followTool = followToolInput.checked;
 	});
 	followStepsInput.addEventListener("change", () => {
 		config.followSteps = Number(followStepsInput.value);

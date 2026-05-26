@@ -1,7 +1,7 @@
 import { config } from ".";
 import { Client, ClientState } from "./client";
 import { ClientPool } from "./clientpool";
-import { Pos } from "./utils";
+import { Col, Pos } from "./utils";
 
 export abstract class Follow {
 	private _radius: number;
@@ -19,7 +19,7 @@ export abstract class Follow {
 		this.step %= this._steps;
 		const pos = Pos.fromWorldPos(OWOP.mouse.worldX, OWOP.mouse.worldY);
 		for (const [client, ps] of this.clients.entries()) {
-			client.move(pos.add(ps[this.step]));
+			client.update(pos.add(ps[this.step]), config.followColor ? new Col(...OWOP.player.selectedColor) : undefined, config.followTool ? OWOP.player.toolId : undefined);
 		}
 	}
 

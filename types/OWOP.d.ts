@@ -758,7 +758,7 @@ interface Player {
 	get rank(): number;
 	get tool(): Tool<unknown>;
 	set tool(name: string);
-	get toolId(): number;
+	get toolId(): number | undefined;
 	get tools(): Record<string, Tool<unknown>>;
 	get id(): number;
 	clearPalette(): void;

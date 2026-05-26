@@ -23,7 +23,7 @@ export class Pos {
 	}
 
 	public static chunkAligned(x: number, y: number) {
-		return this.fromChunkPos(Math.floor(x / 16), Math.floor(y / 16));
+		return this.fromChunkPos(Math.floor(x / CHUNK_SIZE), Math.floor(y / CHUNK_SIZE));
 	}
 
 	public get worldX() {
@@ -58,6 +58,14 @@ export class Pos {
 		this.y = chunkY * CHUNK_SIZE;
 	}
 
+	public get chunkXFloor() {
+		return Math.floor(this.chunkX);
+	}
+
+	public get chunkYFloor() {
+		return Math.floor(this.chunkY);
+	}
+
 	public add(pos: Pos) {
 		return new Pos(this.x + pos.x, this.y + pos.y);
 	}
@@ -80,6 +88,10 @@ export class Col {
 
 	public static fromArray(rgb: [number, number, number]) {
 		return new this(rgb[0], rgb[1], rgb[2]);
+	}
+
+	public static fromInt(rgb: number) {
+		return new this(rgb & 0xFF, rgb >> 8 & 0xFF, rgb >> 16 & 0xFF);
 	}
 
 	public equals(col: Col) {

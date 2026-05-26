@@ -14,6 +14,8 @@ export enum ClientState {
 export class Client {
 	public ws: WebSocket;
 	public pos = new Pos(0, 0);
+	public col = new Col(0, 0, 0);
+	public tool = 0;
 	public bucket = new Bucket(0, 0);
 	public state = ClientState.Connecting;
 	public id?: number;
@@ -52,19 +54,24 @@ export class Client {
 		});
 	}
 
-	public move(pos: Pos) {
+	public update(pos?: Pos, col?: Col, tool?: number) {
+		pos ??= this.pos;
+		col ??= this.col;
+		tool ??= this.tool;
+		this.send(new PacketC2SSendUpdates(pos.worldX, pos.worldY, col.r, col.g, col.b, tool));
 		this.pos = pos;
-		this.send(new PacketC2SSendUpdates(this.pos.worldX, this.pos.worldY, 0, 0, 0, 0));
+		this.col = col;
+		this.tool = tool;
 	}
 
 	public setPixel(pos: Pos, col: Col) {
 		const oldPos = this.pos;
 		const newPos = pos;
-		const chunkSqDist = (newPos.chunkX - oldPos.chunkX) ** 2 + (newPos.chunkY - oldPos.chunkY) ** 2;
+		const chunkSqDist = (newPos.chunkXFloor - oldPos.chunkXFloor) ** 2 + (newPos.chunkYFloor - oldPos.chunkYFloor) ** 2;
 		const shouldMove = chunkSqDist >= 4 ** 2;
-		if (shouldMove) this.move(newPos);
+		if (shouldMove) this.update(newPos);
 		this.send(new PacketC2SUpdatePixel(pos.x, pos.y, col.r, col.g, col.b));
-		if (shouldMove && config.sneaky) this.move(oldPos);
+		if (shouldMove && config.sneaky) this.update(oldPos);
 		--this.bucket.value;
 	}
 
