@@ -1,4 +1,5 @@
 import { ClientPool } from "./clientpool";
+import { registerCommands } from "./commands";
 import { Config } from "./config";
 import { Desync } from "./desync";
 import { tickFollow } from "./implfollow";
@@ -12,6 +13,7 @@ export const pool = new ClientPool();
 
 buildWindow();
 buildTools();
+registerCommands();
 
 OWOP.on(OWOP.events.tick, () => {
 	tickGui();
