@@ -10,6 +10,7 @@ export const buildTools = () => {
 		
 		const tick = () => {
 			const rgb = color.toInt();
+			const chunk = OWOP.misc.world.getChunkAt(pos.chunkXFloor, pos.chunkYFloor);
 			outer: for (let i = 0; i < 16; ++i) {
 				for (let j = 0; j < 16; ++j) {
 					const npos = new Pos(pos.x + i, pos.y + j);
@@ -20,11 +21,11 @@ export const buildTools = () => {
 					const client = pool.client;
 					if (client === undefined) break outer;
 					client.setPixel(npos, color);
-					OWOP.misc.world.getChunkAt(pos.chunkX, pos.chunkY).update(npos.x, npos.y, rgb);
+					chunk.update(npos.x, npos.y, rgb);
 					desync.addPixel(npos, pixelColor);
 				}
 			}
-			OWOP.emit(OWOP.events.renderer.updateChunk, OWOP.misc.world.getChunkAt(pos.chunkX, pos.chunkY));
+			OWOP.emit(OWOP.events.renderer.updateChunk, OWOP.misc.world.getChunkAt(pos.chunkXFloor, pos.chunkYFloor));
 		};
 
 		tool.setEvent("mousedown mousemove", (mouse: any) => {

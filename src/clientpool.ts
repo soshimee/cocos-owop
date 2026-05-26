@@ -11,6 +11,7 @@ export class ClientPool {
 			const task = this.chunkedQueue[0];
 			if (task === undefined) return;
 			const pos = Pos.fromChunkPos(task.x, task.y);
+			const chunk = OWOP.misc.world.getChunkAt(task.x, task.y);
 			for (; task.index < 256; ++task.index) {
 				const dx = task.index % 16;
 				const dy = Math.floor(task.index / 16);
@@ -24,7 +25,7 @@ export class ClientPool {
 				const client = this.client;
 				if (client === undefined) break;
 				client.setPixel(newPos, blendedCol);
-				OWOP.misc.world.getChunkAt(task.x, task.y).update(newPos.x, newPos.y, blendedCol.toInt());
+				chunk.update(newPos.x, newPos.y, blendedCol.toInt());
 				desync.addPixel(newPos, bgCol);
 			}
 			if (task.index >= 256) this.chunkedQueue.shift();
