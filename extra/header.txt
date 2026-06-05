@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name cocos-owop
 // @namespace https://meowing.net
-// @version 0.8
+// @version 0.9
 // @description A helpful script for Our World of Pixels
 // @author catcake43
 // @match https://ourworldofpixels.com/*

@@ -7,9 +7,9 @@ export class Desync {
 	public addPixel(pos: Pos, prevCol: Col) {
 		if (config.desyncTimeout < 1) return;
 		this.removePixel(pos);
-		const [cx, cy] = [pos.chunkXFloor, pos.chunkYFloor];
+		const [cx, cy] = [pos.chunkX, pos.chunkY];
 		this.map.set(`${pos.x},${pos.y}`, setTimeout(() => {
-			OWOP.misc.world.getChunkAt(cx, cy).update(pos.x, pos.y, prevCol.toInt());
+			OWOP.misc.world.getChunkAt(cx, cy).update(pos.x, pos.y, prevCol.toABGR());
 			OWOP.emit(OWOP.events.renderer.updateChunk, OWOP.misc.world.getChunkAt(cx, cy));
 		}, config.desyncTimeout));
 	}

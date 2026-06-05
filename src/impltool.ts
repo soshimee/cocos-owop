@@ -9,8 +9,8 @@ export const buildTools = () => {
 		let color = new Col(0, 0, 0);
 		
 		const tick = () => {
-			const rgb = color.toInt();
-			const chunk = OWOP.misc.world.getChunkAt(pos.chunkXFloor, pos.chunkYFloor);
+			const rgb = color.toABGR();
+			const chunk = OWOP.misc.world.getChunkAt(pos.chunkX, pos.chunkY);
 			outer: for (let i = 0; i < 16; ++i) {
 				for (let j = 0; j < 16; ++j) {
 					const npos = new Pos(pos.x + i, pos.y + j);
@@ -25,13 +25,13 @@ export const buildTools = () => {
 					desync.addPixel(npos, pixelColor);
 				}
 			}
-			OWOP.emit(OWOP.events.renderer.updateChunk, OWOP.misc.world.getChunkAt(pos.chunkXFloor, pos.chunkYFloor));
+			OWOP.emit(OWOP.events.renderer.updateChunk, OWOP.misc.world.getChunkAt(pos.chunkX, pos.chunkY));
 		};
 
 		tool.setEvent("mousedown mousemove", (mouse: any) => {
 			if (!(mouse.buttons & 0b11)) return;
 			pos = Pos.chunkAligned(OWOP.mouse.tileX, OWOP.mouse.tileY);
-			color = Col.fromArray(mouse.buttons === 0b10 ? [255, 255, 255] : OWOP.player.selectedColor);
+			color = mouse.buttons === 0b10 ? new Col(255, 255, 255) : new Col(...OWOP.player.selectedColor);
 			tool.setEvent("tick", tick);
 		});
 		tool.setEvent("mouseup deselect", mouse => {

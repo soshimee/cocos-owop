@@ -67,7 +67,7 @@ export class Client {
 	public setPixel(pos: Pos, col: Col) {
 		const oldPos = this.pos;
 		const newPos = pos;
-		const chunkSqDist = (newPos.chunkXFloor - oldPos.chunkXFloor) ** 2 + (newPos.chunkYFloor - oldPos.chunkYFloor) ** 2;
+		const chunkSqDist = (newPos.chunkX - oldPos.chunkX) ** 2 + (newPos.chunkY - oldPos.chunkY) ** 2;
 		const shouldMove = chunkSqDist >= 4 ** 2;
 		if (shouldMove) this.update(newPos);
 		this.send(new PacketC2SUpdatePixel(pos.x, pos.y, col.r, col.g, col.b));

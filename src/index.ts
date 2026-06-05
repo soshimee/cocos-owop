@@ -5,6 +5,7 @@ import { Desync } from "./desync";
 import { tickFollow } from "./implfollow";
 import { buildWindow, tickGui } from "./implgui";
 import { buildTools } from "./impltool";
+import { tickTarget, tilesUpdateTarget } from "./target";
 import { Pos } from "./utils";
 
 export const config = new Config();
@@ -18,6 +19,7 @@ registerCommands();
 OWOP.on(OWOP.events.tick, () => {
 	tickGui();
 	tickFollow();
+	tickTarget();
 });
 
 OWOP.on(OWOP.events.net.sec.rank, () => {
@@ -28,4 +30,5 @@ OWOP.on(OWOP.events.net.world.tilesUpdated, updates => {
 	for (const update of updates) {
 		desync.removePixel(new Pos(update.x, update.y));
 	}
+	tilesUpdateTarget(updates);
 });

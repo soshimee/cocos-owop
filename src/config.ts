@@ -7,6 +7,9 @@ export class Config {
 	public followTool: boolean;
 	public followSteps: number;
 	public followRadius: number;
+	public target: string;
+	public targetFollow: boolean;
+	public targetChunker: boolean;
 
 	public constructor() {
 		const item = localStorage.getItem("cocosconfig");
@@ -19,6 +22,9 @@ export class Config {
 		this.followTool = conf?.followTool ?? false;
 		this.followSteps = conf?.followSteps ?? 40;
 		this.followRadius = conf?.followRadius ?? 10;
+		this.target = conf?.target ?? "";
+		this.targetFollow = conf?.targetFollow ?? false;
+		this.targetChunker = conf?.targetChunker ?? false;
 	}
 
 	public save() {

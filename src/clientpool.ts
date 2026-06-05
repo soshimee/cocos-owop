@@ -1,6 +1,6 @@
 import { config, desync } from ".";
 import { Client, ClientState } from "./client";
-import { CHUNK_SIZE, Col, ColAlpha, Pos } from "./utils";
+import { CHUNK_SIZE, Col, Pos } from "./utils";
 
 export class ClientPool {
 	public clients = new Set<Client>();
@@ -16,7 +16,7 @@ export class ClientPool {
 				const dx = task.index % 16;
 				const dy = Math.floor(task.index / 16);
 				const newPos = new Pos(pos.x + dx, pos.y + dy);
-				const newCol = new ColAlpha(task.data[task.index * 4], task.data[task.index * 4 + 1], task.data[task.index * 4 + 2], task.data[task.index * 4 + 3]);
+				const newCol = new Col(task.data[task.index * 4], task.data[task.index * 4 + 1], task.data[task.index * 4 + 2], task.data[task.index * 4 + 3]);
 				const pixel = OWOP.misc.world.getPixel(newPos.x, newPos.y);
 				if (pixel === null) break;
 				const bgCol = new Col(pixel[0], pixel[1], pixel[2]);
@@ -25,7 +25,7 @@ export class ClientPool {
 				const client = this.client;
 				if (client === undefined) break;
 				client.setPixel(newPos, blendedCol);
-				chunk.update(newPos.x, newPos.y, blendedCol.toInt());
+				chunk.update(newPos.x, newPos.y, blendedCol.toABGR());
 				desync.addPixel(newPos, bgCol);
 			}
 			if (task.index >= 256) this.chunkedQueue.shift();
@@ -47,7 +47,7 @@ export class ClientPool {
 	public queueImage(canvas: HTMLCanvasElement, pos: Pos) {
 		const context = canvas.getContext("2d");
 		if (context === null) return;
-		const [chunkX, chunkY] = [pos.chunkXFloor, pos.chunkYFloor];
+		const [chunkX, chunkY] = [pos.chunkX, pos.chunkY];
 		const chunkAligned = Pos.fromChunkPos(chunkX, chunkY);
 		const offset = new Pos(pos.x - chunkAligned.x, pos.y - chunkAligned.y);
 		const chunkWidth = Math.ceil((canvas.width + offset.x) / CHUNK_SIZE);

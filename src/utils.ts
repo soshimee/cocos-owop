@@ -42,14 +42,6 @@ export class Pos {
 		this.y = worldY / WORLD_POS_MULT;
 	}
 
-	public get chunkX() {
-		return this.x / CHUNK_SIZE;
-	}
-
-	public get chunkY() {
-		return this.y / CHUNK_SIZE;
-	}
-
 	public set chunkX(chunkX: number) {
 		this.x = chunkX * CHUNK_SIZE;
 	}
@@ -58,12 +50,12 @@ export class Pos {
 		this.y = chunkY * CHUNK_SIZE;
 	}
 
-	public get chunkXFloor() {
-		return Math.floor(this.chunkX);
+	public get chunkX() {
+		return Math.floor(this.x / CHUNK_SIZE);
 	}
 
-	public get chunkYFloor() {
-		return Math.floor(this.chunkY);
+	public get chunkY() {
+		return Math.floor(this.y / CHUNK_SIZE);
 	}
 
 	public add(pos: Pos) {
@@ -79,36 +71,41 @@ export class Col {
 	public r: number;
 	public g: number;
 	public b: number;
+	public a: number;
 
-	public constructor(r: number, g: number, b: number) {
+	public constructor(r: number, g: number, b: number, a = 0xFF) {
 		this.r = r;
 		this.g = g;
 		this.b = b;
+		this.a = a;
 	}
 
-	public static fromArray(rgb: [number, number, number]) {
-		return new this(rgb[0], rgb[1], rgb[2]);
+	public static fromABGR(bgr: number) {
+		return new this(bgr & 0xFF, bgr >> 8 & 0xFF, bgr >> 16 & 0xFF, bgr >> 24 & 0xFF);
 	}
 
-	public static fromInt(rgb: number) {
-		return new this(rgb & 0xFF, rgb >> 8 & 0xFF, rgb >> 16 & 0xFF);
+	public static fromRGBA(rgb: number) {
+		return new this(rgb >> 24 & 0xFF, rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF);
+	}
+
+	public static fromBGR(bgr: number) {
+		return new this(bgr & 0xFF, bgr >> 8 & 0xFF, bgr >> 16 & 0xFF);
+	}
+
+	public static fromRGB(rgb: number) {
+		return new this(rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF);
 	}
 
 	public equals(col: Col) {
-		return this.r === col.r && this.g === col.g && this.b === col.b;
+		return this.r === col.r && this.g === col.g && this.b === col.b && this.a === this.a;
 	}
 
-	public toInt() {
-		return this.b << 16 | this.g << 8 | this.r;
+	public toABGR() {
+		return this.a << 24 | this.b << 16 | this.g << 8 | this.r;
 	}
-}
 
-export class ColAlpha extends Col {
-	public a: number;
-
-	public constructor(r: number, g: number, b: number, a: number) {
-		super(r, g, b);
-		this.a = a;
+	public toRGBA() {
+		return this.r << 24 | this.g << 16 | this.b << 8 | this.a;
 	}
 
 	public blendOn(bg: Col) {
@@ -116,12 +113,7 @@ export class ColAlpha extends Col {
 		const z = 1 - a;
 		return new Col(Math.round(this.r * a + bg.r * z), Math.round(this.g * a + bg.g * z), Math.round(this.b * a + bg.b * z));
 	}
-
-	public equals(col: ColAlpha) {
-		return this.r === col.r && this.g === col.g && this.b === col.b && this.a === col.a;
-	}
 }
-
 export class Bucket {
 	public rate: number;
 	public per: number;
